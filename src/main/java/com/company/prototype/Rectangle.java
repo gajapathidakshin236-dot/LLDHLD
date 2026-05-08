@@ -39,6 +39,7 @@ public final class Rectangle extends Shape {
     @Override
     public boolean equals(Object o) {
         if (!super.equals(o)) return false;
+        if (!(o instanceof Rectangle)) return false;
         Rectangle rectangle = (Rectangle) o;
         return width == rectangle.width && height == rectangle.height;
     }

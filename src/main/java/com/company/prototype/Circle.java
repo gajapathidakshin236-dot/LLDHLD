@@ -29,6 +29,7 @@ public final class Circle extends Shape {
     @Override
     public boolean equals(Object o) {
         if (!super.equals(o)) return false;
+        if (!(o instanceof Circle)) return false;
         Circle circle = (Circle) o;
         return radius == circle.radius;
     }
