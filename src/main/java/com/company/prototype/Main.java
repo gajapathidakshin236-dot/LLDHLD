@@ -22,8 +22,10 @@ public class Main {
         Shape clone1 = registry.getById("Big red circle");
         Shape clone2 = registry.getByColor("blue");
 
+        assert clone1 != null;
         System.out.println("clone1 equals original circle: " + clone1.equals(circle));
         System.out.println("clone1 same instance as original: " + (clone1 == circle));
+        assert clone2 != null;
         System.out.println("clone2 equals original rectangle: " + clone2.equals(rectangle));
         System.out.println("clone2 same instance as original: " + (clone2 == rectangle));
     }
