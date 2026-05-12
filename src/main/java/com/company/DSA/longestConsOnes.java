@@ -24,4 +24,39 @@ public class longestConsOnes {
     public static void main(String[] args) {
 
     }
+
+
+    public static int longestOnes(int[] nums, int k) {
+
+        int left = 0;
+        int right = 0;
+        int zeros = 0;
+        int maxLen = 0;
+
+        while (right < nums.length) {
+
+            // Count zeros
+            if (nums[right] == 0) {
+                zeros++;
+            }
+
+            // Shrink window if zeros exceed k
+            while (zeros > k) {
+
+                if (nums[left] == 0) {
+                    zeros--;
+                }
+
+                left++;
+            }
+
+            // Update maximum length
+            int len = right - left + 1;
+            maxLen = Math.max(maxLen, len);
+
+            right++;
+        }
+
+        return maxLen;
+    }
 }

@@ -1,7 +1,9 @@
 package com.company.DSA;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public final class TwoSumSolution {
     private TwoSumSolution() {
@@ -12,7 +14,8 @@ public final class TwoSumSolution {
      * If no solution exists, returns {-1, -1}.
      */
     public static int[] twoSum(int[] nums, int target) {
-        Map<Integer, Integer> seen = new HashMap<>(); // value -> index
+        Map<Integer,  Integer> seen = new HashMap<>(); // value -> index
+        Set<Integer> set = new HashSet<>();
         for (int i = 0; i < nums.length; i++) {
             int need = target - nums[i];
             Integer j = seen.get(need);

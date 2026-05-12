@@ -2,7 +2,7 @@ package com.company.DSA;
 
 import java.util.HashMap;
 
-public class Cns {
+public class ExactlyKDistinct {
 // Count Number of Substrings
 //
 //
