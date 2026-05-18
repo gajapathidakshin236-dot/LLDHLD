@@ -14,7 +14,7 @@ public class FruitBasket {
 
             while (map.size()>k) {
 
-                  int lval=map.getOrDefault(nums.get(l),0);  // returns 1
+                  int lval=map.getOrDefault(nums.get(l),0);
 
                   lval=lval-1;
                   map.put(nums.get(l), lval);

@@ -32,9 +32,9 @@ public class FindAge {
     static void exactAge(int bd, int bm, int by,
                          int cd, int cm, int cy) {
         if(cd<bd) {
-            cm--;
 
-            int prevMonth = cm - 1;
+
+            int prevMonth = cm - 2;
 
             if (prevMonth < 0)
                 prevMonth = 11;
@@ -49,9 +49,7 @@ public class FindAge {
 
         if(cm<bm) {
             cy--;
-            int prevYear=cy-1;
             cm+=12;
-
         }
 
         int days = cd - bd;

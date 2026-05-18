@@ -14,8 +14,8 @@ public final class TwoSumSolution {
      * If no solution exists, returns {-1, -1}.
      */
     public static int[] twoSum(int[] nums, int target) {
-        Map<Integer,  Integer> seen = new HashMap<>(); // value -> index
-        Set<Integer> set = new HashSet<>();
+        HashMap<Integer,  Integer> seen = new HashMap<>(); // value -> index
+
         for (int i = 0; i < nums.length; i++) {
             int need = target - nums[i];
             Integer j = seen.get(need);
