@@ -20,8 +20,6 @@ public class FruitBasket {
                   map.put(nums.get(l), lval);
                   if(lval<=0) {
                       map.remove(nums.get(l));
-                  } else {
-
                   }
                 l++;
             }
