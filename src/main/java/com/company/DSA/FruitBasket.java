@@ -2,6 +2,7 @@ package com.company.DSA;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FruitBasket {
 //   l     r
@@ -63,5 +64,74 @@ public class FruitBasket {
 
         return maxlen;
     }
+
+
+
+    public static int fruit(int[] fruits) {
+        Map<Integer,Integer> map = new HashMap<>();
+        //
+
+        int l=0;
+        int maxlen = 0;
+
+        for (int r = 0; r < fruits.length; r++) {
+            map.put(fruits[r],map.getOrDefault(fruits[r],0)+1);
+
+
+             if (map.size()>2) {
+                 int  left = fruits[l];
+                 int val = map.get(left);
+                 val = val - 1;
+
+                 if (val == 0) {
+                     map.remove(left);
+                 } else {
+                     map.put(left, val);
+                 }
+
+                 l++;
+             }
+              maxlen=Math.max(r-l+1,maxlen);
+        }
+
+        return maxlen;
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }

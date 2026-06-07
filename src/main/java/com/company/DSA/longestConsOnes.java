@@ -16,7 +16,7 @@ public class longestConsOnes {
                 l++;
             }
 
-            maxlen = Math.max(r - l, maxlen);
+            maxlen = Math.max(r - l+1, maxlen);
             r++;
         }
         return maxlen;
