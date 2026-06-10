@@ -250,5 +250,21 @@ String sss="ddd ddds dddd ";
                     Collectors.averagingInt(Employee::getSalary)
             ));
 
+    public static void met() {
+        LinkedHashMap<Character, Integer> map = new LinkedHashMap<>();
+        map.put('A', 1);
+
+
+        for (Map.Entry<Character,Integer> m : map.entrySet()) {
+            System.out.println(m.getKey() + " " + m.getValue());
+        }
+
+    }
+
+    public static void main(String[] args) {
+        met();
+    }
+
+
     
 }
