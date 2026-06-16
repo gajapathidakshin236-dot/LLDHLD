@@ -235,7 +235,7 @@ String sss="ddd ddds dddd ";
             Arrays.stream(sss.trim().split("\\s+"))
                     .collect(Collectors.groupingBy(
                             str -> str,
-                            TreeMap::new,
+                            TreeMap::new, // used for sortging and keepiong
                             Collectors.counting()
                     ));
 
@@ -251,6 +251,22 @@ String sss="ddd ddds dddd ";
                     Employee::getDept,
                     Collectors.averagingInt(Employee::getSalary)
             ));
+
+    public static void met() {
+        LinkedHashMap<Character, Integer> map = new LinkedHashMap<>();
+        map.put('A', 1);
+
+
+        for (Map.Entry<Character,Integer> m : map.entrySet()) {
+            System.out.println(m.getKey() + " " + m.getValue());
+        }
+
+    }
+
+    public static void main(String[] args) {
+        met();
+    }
+
 
     
 }
