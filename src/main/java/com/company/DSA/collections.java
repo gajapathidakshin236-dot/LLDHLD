@@ -227,13 +227,15 @@ public class collections {
 
     Map<String, Long> countByDept = empss.stream()
             .collect(Collectors.groupingBy(Employee::getDept,TreeMap::new, Collectors.counting()));
+
+
 String sss="ddd ddds dddd ";
 
     Map<String, Long> countbystrigng =
             Arrays.stream(sss.trim().split("\\s+"))
                     .collect(Collectors.groupingBy(
                             str -> str,
-                            TreeMap::new,
+                            TreeMap::new, // used for sortging and keepiong
                             Collectors.counting()
                     ));
 

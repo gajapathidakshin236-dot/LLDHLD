@@ -69,6 +69,7 @@ public class ParkingLotService {
   public List<Slot> getOccupiedSlots() {
     validateParkingLotExists();
     final List<Slot> occupiedSlotsList = new ArrayList<>();
+
     final Map<Integer, Slot> allSlots = parkingLot.getSlots();
 
     for (int i = 1; i <= parkingLot.getCapacity(); i++) {
