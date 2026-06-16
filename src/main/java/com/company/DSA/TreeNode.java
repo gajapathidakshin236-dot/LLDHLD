@@ -1,8 +1,9 @@
 package com.company.DSA;
 
-import java.util.*;
-
-/** Standard tree node used across DSA tree solutions. */
+/* ============================================================
+ *  Shared TreeNode helper for binary tree problems.
+ *  Used by: LevelOrderTraversal, ValidateBST, LCA, Diameter, etc.
+ * ============================================================ */
 public class TreeNode {
     public int val;
     public TreeNode left, right;

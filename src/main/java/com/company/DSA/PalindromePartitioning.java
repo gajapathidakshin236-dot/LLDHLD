@@ -2,11 +2,29 @@ package com.company.DSA;
 
 import java.util.*;
 
-/**
- * LeetCode #131 - Palindrome Partitioning
- * Backtrack: for each prefix that's a palindrome, recurse on rest.
- * Time: O(n * 2^n)  Space: O(n)
- */
+/* ============================================================
+ *  LeetCode #131 — Palindrome Partitioning
+ * ============================================================
+ *  PROBLEM
+ *  -------
+ *  Given s, return all ways to partition s into contiguous substrings each
+ *  of which is a palindrome.
+ *
+ *  EXAMPLES
+ *  --------
+ *  Ex1: "aab" → [["a","a","b"],["aa","b"]]
+ *  Ex2: "a"   → [["a"]]
+ *  Ex3: "abc" → [["a","b","c"]]
+ *  Ex4: "aaa" → [["a","a","a"],["a","aa"],["aa","a"],["aaa"]]
+ *
+ *  CONSTRAINTS:  1 <= s.length <= 16; lowercase English.
+ *
+ *  HINTS
+ *  -----
+ *   1. Backtrack. For each prefix that is a palindrome, recurse on the rest.
+ *   2. isPalindrome can be O(n) check; total still bounded by 2^n.
+ *   3. Optionally precompute isPal[i][j] via DP for speed.
+ * ============================================================ */
 public class PalindromePartitioning {
     public List<List<String>> partition(String s) {
         List<List<String>> res = new ArrayList<>();
@@ -28,3 +46,17 @@ public class PalindromePartitioning {
         return true;
     }
 }
+
+/* ============================================================
+ *  APPROACH
+ * ============================================================
+ *  Standard backtracking: at index i, try every j >= i. If s[i..j] is a
+ *  palindrome, append it and recurse from j+1. Snapshot on i == n.
+ *
+ *  DP speedup:
+ *    Precompute isPal[i][j] in O(n^2) using bottom-up:
+ *      isPal[i][j] = (s[i]==s[j]) && (j-i<2 || isPal[i+1][j-1])
+ *
+ *  Complexity: Time O(n * 2^n), Space O(n) recursion.
+ *  Pattern: backtracking + decision-per-split. Same: word break (#139, #140).
+ * ============================================================ */
