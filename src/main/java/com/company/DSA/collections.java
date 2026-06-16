@@ -68,7 +68,7 @@ public class collections {
        }
 
        String dept;
-        int salary;
+       int salary;
         // constructor, getters
     }
 
@@ -109,14 +109,14 @@ public class collections {
 
     List<String> input = List.of("apple", "banana", "apple", "cherry", "banana");
 
-    List<String> unique = input.stream().collect(Collectors.toMap(
+    List<String> unique = new ArrayList<>(input.stream().collect(Collectors.toMap(
             s -> s,
             s -> s,
             /* fill the merge function */
-            (a,b) -> a, // we choose a for de duplication
+            (a, b) -> a, // we choose a for de duplication
             LinkedHashMap::new
             /* fill the map type */
-    )).values().stream().collect(Collectors.toList());
+    )).values());
 
 
     @Getter
@@ -227,6 +227,8 @@ public class collections {
 
     Map<String, Long> countByDept = empss.stream()
             .collect(Collectors.groupingBy(Employee::getDept,TreeMap::new, Collectors.counting()));
+
+
 String sss="ddd ddds dddd ";
 
     Map<String, Long> countbystrigng =
