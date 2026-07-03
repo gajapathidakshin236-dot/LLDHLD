@@ -1,53 +1,80 @@
 package com.company.DSA.KafkaLLD;
 
 /**
- * Demo of the in-memory Kafka-style pub-sub.
+ * Runnable demo of the in-memory Kafka-style pub-sub.
  *
  * Shows:
- *  - producing keyed messages (same key -> same partition, ordered)
- *  - one group with 2 consumers splitting partitions
- *  - a SECOND group independently reading the same data (separate offsets)
+ *   - producing keyed messages (same key -> same partition, preserving order)
+ *   - one consumer group with 2 consumers splitting 3 partitions
+ *   - a SECOND consumer group independently reading the same data (own offsets)
+ *   - offsets are remembered — a second poll only sees NEW messages
  *
- * Run: javac *.java && java KafkaDemo
+ * Run:  javac *.java && java com.company.DSA.KafkaLLD.KafkaDemo
  */
 public class KafkaDemo {
-    public static void main(String[] args) {
-        Broker broker = new Broker(new KeyHashPartitioner());
-        broker.createTopic("orders", 3);   // 3 partitions
 
-        // ---- Produce ----
-        System.out.println("=== Producing 6 messages ===");
-        Producer producer = new Producer(broker);
-        producer.send("orders", "user_1", "order A");
-        producer.send("orders", "user_2", "order B");
-        producer.send("orders", "user_1", "order C");   // same key -> same partition as A
-        producer.send("orders", "user_3", "order D");
-        producer.send("orders", "user_2", "order E");   // same key -> same partition as B
-        producer.send("orders", "user_1", "order F");   // same key -> same partition as A,C
+    private static final String TOPIC_NAME       = "orders";
+    private static final int    PARTITION_COUNT  = 3;
 
-        // ---- Group 1: analytics, 2 consumers split 3 partitions ----
-        System.out.println("\n=== analytics-group (2 consumers, 3 partitions) ===");
-        ConsumerGroup analytics = new ConsumerGroup("analytics-group", broker);
-        analytics.addConsumer("C1");
-        analytics.addConsumer("C2");
-        analytics.assign("orders");
-        System.out.println("  -- polling --");
-        analytics.pollAll("orders");
+    public static void main(final String[] args) {
+        final Broker broker = new Broker(new KeyHashPartitioner());
+        broker.createTopic(TOPIC_NAME, PARTITION_COUNT);
 
-        // ---- Group 2: billing, reads the SAME data independently ----
-        System.out.println("\n=== billing-group (1 consumer, own offsets) ===");
-        ConsumerGroup billing = new ConsumerGroup("billing-group", broker);
-        billing.addConsumer("B1");
-        billing.assign("orders");
-        System.out.println("  -- polling --");
-        billing.pollAll("orders");
-
-        // ---- Produce more, analytics polls again (offsets resume) ----
-        System.out.println("\n=== Produce 2 more, analytics polls again ===");
-        producer.send("orders", "user_1", "order G");
-        producer.send("orders", "user_4", "order H");
-        analytics.pollAll("orders");   // only sees the NEW messages (offsets remembered)
+        produceInitialBatch(broker);
+        runAnalyticsGroup(broker);
+        runBillingGroup(broker);
+        produceAdditionalBatchAndRepoll(broker);
 
         System.out.println("\n=== Done ===");
+    }
+
+    // ---------- steps ----------
+
+    private static void produceInitialBatch(final Broker broker) {
+        System.out.println("=== Producing 6 messages ===");
+        final Producer producer = new Producer(broker);
+
+        producer.send(TOPIC_NAME, "user_1", "order A");
+        producer.send(TOPIC_NAME, "user_2", "order B");
+        producer.send(TOPIC_NAME, "user_1", "order C"); // same key -> same partition as A
+        producer.send(TOPIC_NAME, "user_3", "order D");
+        producer.send(TOPIC_NAME, "user_2", "order E"); // same key -> same partition as B
+        producer.send(TOPIC_NAME, "user_1", "order F"); // same key -> same partition as A, C
+    }
+
+    private static void runAnalyticsGroup(final Broker broker) {
+        System.out.println("\n=== analytics-group (2 consumers, 3 partitions) ===");
+        final ConsumerGroup analyticsGroup = new ConsumerGroup("analytics-group", broker);
+        analyticsGroup.addConsumer("C1");
+        analyticsGroup.addConsumer("C2");
+        analyticsGroup.assign(TOPIC_NAME);
+
+        System.out.println("  -- polling --");
+        analyticsGroup.pollAll(TOPIC_NAME);
+    }
+
+    private static void runBillingGroup(final Broker broker) {
+        System.out.println("\n=== billing-group (1 consumer, own offsets) ===");
+        final ConsumerGroup billingGroup = new ConsumerGroup("billing-group", broker);
+        billingGroup.addConsumer("B1");
+        billingGroup.assign(TOPIC_NAME);
+
+        System.out.println("  -- polling --");
+        billingGroup.pollAll(TOPIC_NAME);
+    }
+
+    private static void produceAdditionalBatchAndRepoll(final Broker broker) {
+        System.out.println("\n=== Produce 2 more, analytics polls again ===");
+        final Producer producer = new Producer(broker);
+        producer.send(TOPIC_NAME, "user_1", "order G");
+        producer.send(TOPIC_NAME, "user_4", "order H");
+
+        // Re-create the analytics group only to demo that offsets are per-group,
+        // stored in the broker, so a re-poll picks up ONLY the new messages.
+        final ConsumerGroup analyticsGroup = new ConsumerGroup("analytics-group", broker);
+        analyticsGroup.addConsumer("C1");
+        analyticsGroup.addConsumer("C2");
+        analyticsGroup.assign(TOPIC_NAME);
+        analyticsGroup.pollAll(TOPIC_NAME);
     }
 }
