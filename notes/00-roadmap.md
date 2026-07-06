@@ -23,9 +23,16 @@ files actually written in `notes/` follow their own numbering. Mapping so far:
 | `09-stock-trading.md` | case study (matching engine; LLD slice of 95) |
 | `10-data-structures.md` | supporting internals: TreeSet/red-black, Trie, Heap |
 | `11-concurrency.md` | supporting: threads, races, the fix ladder |
+| `12-patterns-structural-2.md` | 13 (prototype), 14-20 completed: proxy, facade, composite, bridge, flyweight — with runnable code per pattern |
+| `13-patterns-behavioral-2.md` | 22-26, 30-32 completed: command, iterator, mediator, memento, visitor, interpreter, null object — with runnable code per pattern |
 
-Everything not in this table (Phase E/F/G — HLD topics, remaining patterns,
-remaining case studies) is still to be written.
+**All 23 GoF patterns now have notes; runnable code lives in
+`src/main/java/com/company/patterns/*` and `com/company/{factorymethod,
+abstractfactory,builder,prototype,singleton}`.**
+
+Still to be written: non-GoF patterns (33-38: repository/DAO, unit of work,
+MVC/MVP/MVVM, CQRS, resilience, saga), remaining LLD case studies (41-52),
+and all of Phase E/F/G (HLD).
 
 ---
 

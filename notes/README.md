@@ -58,6 +58,13 @@ mistakes I actually made (flagged), and interview one-liners.
 11-concurrency.md              threads from zero, every race we hit, the fix
                                ladder: synchronized -> granularity -> atomics ->
                                concurrent collections -> distributed (Redis)
+12-patterns-structural-2.md    Prototype (deep/shallow copy), Proxy (3 flavors,
+                               proxy-vs-decorator), Facade, Composite, Bridge
+                               (the N*M explosion), Flyweight (Integer cache)
+13-patterns-behavioral-2.md    Command (undo stack), Iterator, Mediator,
+                               Memento (vs Command-undo), Visitor (double
+                               dispatch), Interpreter, Null Object
+                               + the full GoF checklist table
 ```
 
 Runnable code for every system lives separately (ElevatorSystem.java,

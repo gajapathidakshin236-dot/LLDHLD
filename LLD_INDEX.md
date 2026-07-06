@@ -26,6 +26,22 @@ patterns each one demonstrates.
 - **Builder** — `com/company/builder/`, `patterns/builder/`.
 - **Observer / Decorator / Adapter / Chain of Responsibility** —
   `com/company/patterns/*` reference implementations.
+- **Factory Method** — `com/company/factorymethod/` (Logistics/Transport,
+  pairs with notes/02 §B).
+- **Proxy / Facade / Composite / Bridge / Flyweight** —
+  `com/company/patterns/{proxy,facade,composite,bridge,flyweight}/`
+  runnable demos (pair with notes/12).
+- **Command (undo) / Iterator / Mediator / Memento / Visitor / Interpreter /
+  Null Object** —
+  `com/company/patterns/{command,iterator,mediator,memento,visitor,interpreter,nullobject}/`
+  runnable demos (pair with notes/13).
+- **Strategy / State (both variants) / Template Method** —
+  `com/company/patterns/{strategy,state,templatemethod}/`
+  runnable demos (pair with notes/03).
+- **Prototype** — `com/company/prototype/` (registry + copy constructors,
+  pairs with notes/12).
+
+> All demo classes have a `main`; every package compile-verified on Java 11.
 
 ## Elevator LLD (v1) — what's inside
 
