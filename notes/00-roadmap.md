@@ -5,6 +5,30 @@
 
 ---
 
+## STATUS (updated 2026-07-06 — after the notes merge)
+
+The numbering in this roadmap is the **planned curriculum** (100 topics). The
+files actually written in `notes/` follow their own numbering. Mapping so far:
+
+| Actual file | Covers roadmap items |
+|---|---|
+| `01-foundations.md` | 01 (HLD vs LLD, ADR) + 03 (coupling/cohesion) + parts of 04 (SOLID map) + 06 (composition vs inheritance) + Law of Demeter |
+| `02-patterns-creational.md` | 09 (singleton), 10 (factory method — full deep dive, was its own file), 11 (abstract factory overview), 12 (builder), + simple factory |
+| `03-patterns-structural-behavioral.md` | 14 (adapter), 17 (decorator), 21 (chain of resp.), 26 (observer), 27 (state), 28 (strategy), 29 (template method) + rapid-fire on the rest of GoF |
+| `04-elevator.md` | 40 (case: elevator) |
+| `05-parking-lot.md` | 39 (case: parking lot) |
+| `06-rate-limiter.md` | 50 (case: rate limiter) + overlaps 68 |
+| `07-kafka-pubsub.md` | LLD slice of 60 (message queues) |
+| `08-food-delivery.md` | case study (state machine, strategies, observer) |
+| `09-stock-trading.md` | case study (matching engine; LLD slice of 95) |
+| `10-data-structures.md` | supporting internals: TreeSet/red-black, Trie, Heap |
+| `11-concurrency.md` | supporting: threads, races, the fix ladder |
+
+Everything not in this table (Phase E/F/G — HLD topics, remaining patterns,
+remaining case studies) is still to be written.
+
+---
+
 ## 0. How to read this roadmap
 
 Each numbered phase below maps to one note file in `notes/`. We will fill them in **in order**, but only as far ahead of you as is useful — we are NOT going to dump every file at once. You self-assess what you know, we skip what you've nailed, we deep-dive what you haven't.

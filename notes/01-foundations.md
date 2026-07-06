@@ -1,8 +1,14 @@
-# 01 — Foundations: HLD vs LLD, and what an ADR is
+# 01 — Foundations
 
 > Read this before anything else. Every later note assumes you understand the words here.
+>
+> This file merges two foundation tracks:
+> **Part I** — what software design is, the HLD/LLD zoom levels, and ADRs (the decision-record habit).
+> **Part II** — the three OO principles that came BEFORE any pattern (composition vs inheritance, coupling/cohesion, Law of Demeter), the SOLID map, and the relationship vocabulary used in every LLD.
 
 ---
+
+# PART I — Software design, HLD vs LLD, and what an ADR is
 
 ## 1. What is "software design", actually?
 
@@ -276,7 +282,7 @@ Both levels produce **decisions**, and the decisions worth remembering get captu
 
 ## 6. Worked LLD vs HLD example: "we need rate limiting"
 
-(You already have a `RateLimier/` folder in this repo. Good, we can use it as the running example.)
+(You already have a `RateLimier/` folder in this repo. Good, we can use it as the running example. The full rate-limiter LLD is in `06-rate-limiter.md`.)
 
 The request: *"users are slamming our public API. We need to rate-limit them."*
 
@@ -320,11 +326,11 @@ Three months later when somebody says "wait, why are we letting everyone through
 - **ADR** — a short markdown file capturing one architecture decision: context, options, decision, trade-offs, consequences.
 - **Trade-off** — every benefit a choice gives you comes with a cost it makes you pay; design is the discipline of paying the costs you're willing to pay.
 
-If any term in this list still feels fuzzy, tell me which one and we'll deep-dive it before moving on.
+If any term in this list still feels fuzzy, flag it and deep-dive it before moving on.
 
 ---
 
-## 8. Mini-exercises
+## 8. Mini-exercises (Part I)
 
 Don't skip these — they're the cheapest way to check that the ideas stuck.
 
@@ -335,6 +341,230 @@ Don't skip these — they're the cheapest way to check that the ideas stuck.
 
 ---
 
-## 9. What's next
+# PART II — The three principles every pattern stands on
 
-Now flip back to `00-roadmap.md` and find the **self-assessment** I'll ask you in chat. Tell me which prerequisite groups you already know (OOP, SOLID, networking, HTTP, SQL, caching, queues, etc.) and I'll write the first deep-dive note for the **first thing you don't already know**, not the first thing in the list. We start from your real gap, not from the top.
+These three principles came BEFORE any pattern, because every pattern is just a
+disciplined application of them.
+
+---
+
+## 9. Composition vs Inheritance ("favor composition")
+
+### The vocabulary first
+- **Inheritance** = "is-a". `class Sparrow extends Bird` — a Sparrow IS a Bird.
+  The child gets the parent's methods automatically.
+- **Composition** = "has-a". A class HOLDS another object as a field and
+  delegates work to it. `class Bird { FlyBehavior flyBehavior; }`
+
+### The problem inheritance creates (the Bird example)
+
+```java
+class Bird {
+    public void eat() { ... }
+    public void fly() { ... }        // assumes ALL birds fly
+}
+class Penguin extends Bird {
+    @Override public void fly() {
+        throw new UnsupportedOperationException("Penguins can't fly!");  // BROKEN
+    }
+}
+```
+
+`Penguin penguin = new Penguin(); penguin.fly();` blows up. This violates
+**LSP — Liskov Substitution Principle**: a subclass must be usable anywhere its
+parent is, without breaking behavior. A child that throws on a parent method is
+NOT substitutable.
+
+### Fix level 1 — capability interfaces (Interface Segregation)
+
+Don't put `fly()` on Bird. Model capabilities as separate interfaces:
+
+```java
+interface Flyable  { void fly(); }
+interface Swimmable { void swim(); }
+
+abstract class Bird { public void eat() { ... } }   // only what ALL birds share
+
+class Sparrow extends Bird implements Flyable { ... }
+class Penguin extends Bird implements Swimmable { ... }
+class Duck    extends Bird implements Flyable, Swimmable { ... }
+class Ostrich extends Bird { }                       // just eats. Fine.
+```
+
+No subclass throws "unsupported" -> LSP restored. Code that needs flyers takes
+`Flyable`, not `Bird`.
+
+### Fix level 2 — true composition (behavior objects)
+
+Behaviors become swappable OBJECTS plugged into the bird:
+
+```java
+interface FlyBehavior { void fly(); }
+class CanFly implements FlyBehavior    { public void fly() { ... } }
+class CannotFly implements FlyBehavior { public void fly() { System.out.println("can't"); } }
+
+abstract class Bird {
+    protected FlyBehavior flyBehavior;          // COMPOSED, not inherited
+    public Bird(FlyBehavior fb) { this.flyBehavior = fb; }
+    public void performFly() { flyBehavior.fly(); }          // delegate
+    public void setFlyBehavior(FlyBehavior fb) { this.flyBehavior = fb; }  // swap at RUNTIME
+}
+```
+
+This is literally the **Strategy pattern**. Composition's superpower: behavior
+is swappable at runtime; inheritance locks it at compile time.
+
+### Interview line
+> "Inheritance models 'is-a' but locks behavior at compile time. Composition
+> models 'has-a' and lets behavior change at runtime. Prefer composition unless
+> there's a true is-a relationship with shared implementation."
+
+---
+
+## 10. Coupling & Cohesion
+
+### Definitions
+- **Cohesion** = what a class DOES. High cohesion = the class does ONE thing well.
+- **Coupling** = what a class KNOWS about others. Low coupling = it knows as
+  little as possible about other classes' internals.
+
+Aim: **HIGH cohesion, LOW coupling.**
+
+### The disease (one class doing everything, hardcoded to everything)
+
+```java
+class OrderProcessor {
+    public void processOrder(...) {
+        // 1. validate   2. open raw JDBC to MySQL with hardcoded credentials
+        // 3. send email via hardcoded Gmail SMTP   4. System.out logging
+        // 5. inventory logic
+    }
+}
+```
+
+- **Low cohesion**: 5 unrelated jobs in one class (a junk drawer).
+- **High coupling**: hardcoded to MySQL, Gmail, System.out. Swap MySQL->Postgres
+  and this class breaks.
+- **OCP violated**: adding SMS notification = MODIFY this class.
+
+### The cure — split by responsibility + depend on abstractions (DIP)
+
+```java
+class OrderProcessor {
+    private final OrderValidator validator;
+    private final OrderRepository repository;       // interface
+    private final NotificationService notifier;     // interface
+    private final InventoryService inventory;
+    private final Logger logger;                    // interface
+
+    public OrderProcessor(OrderValidator v, OrderRepository r,
+                          NotificationService n, InventoryService i, Logger l) {
+        // constructor injection (DI)
+        ...
+    }
+    public void processOrder(Order order) {
+        validator.validate(order);
+        repository.save(order);
+        inventory.reduceStock(order);
+        notifier.notify(order);
+        logger.log(...);
+    }
+}
+```
+
+- Cohesion UP (each class one job), coupling DOWN (depends on interfaces).
+- New notification channel = new impl class, `OrderProcessor` untouched (OCP).
+- Testable: inject mocks.
+
+### Interview lines
+> "Cohesion is about what a class does — one thing. Coupling is about what a
+> class knows — as little as possible. High cohesion, low coupling."
+> "Depend on abstractions, not concretions, so swapping implementations doesn't
+> ripple through the codebase." (DIP — the D in SOLID)
+
+---
+
+## 11. Law of Demeter ("don't talk to strangers" / "tell, don't ask")
+
+### The rule
+A method should only talk to: itself, its parameters, objects it creates, its
+direct fields. NOT "friends of friends".
+
+### The smell — the train wreck
+
+```java
+double money = customer.getWallet().getMoney();       // two dots deep
+customer.getWallet().setMoney(money - amount);
+```
+
+`PaymentService` was handed a `Customer`; `Wallet` is a stranger. It now knows
+Customer's INTERNAL STRUCTURE. If Wallet becomes Account, or getMoney() becomes
+getBalance(), or money becomes BigDecimal — PaymentService breaks. Bonus bug:
+read-check-write is a race condition under threads.
+
+### The fix — push the operation INTO the object that owns the data
+
+```java
+class Wallet {
+    private double balance;
+    public void debit(double amount) {
+        if (amount > balance) throw new InsufficientFundsException(...);
+        balance -= amount;
+    }
+}
+class Customer {
+    private Wallet wallet;
+    public void pay(double amount) { wallet.debit(amount); }   // delegate
+}
+class PaymentService {
+    public void charge(Customer customer, double amount) {
+        customer.pay(amount);          // ONE dot. Demeter happy.
+    }
+}
+```
+
+- Wallet owns its rules; logic lives where the data lives.
+- No leaking getters. Swap Wallet->Account later: `pay()` signature unchanged.
+
+### Nuance
+Fluent APIs (builders, streams) LOOK like train wrecks but aren't — they return
+`this`/same type, so no internal structure leaks. Demeter is about reaching INTO
+other objects.
+
+### Interview lines
+> "Chained calls like a.getB().getC() mean you know too much about someone
+> else's structure."
+> "Tell, don't ask — push the operation into the object that owns the data."
+
+---
+
+## 12. Quick SOLID map (as encountered in the sessions)
+
+| Letter | Principle | Where we hit it |
+|---|---|---|
+| S | Single Responsibility | OrderProcessor junk drawer; calculateFee must NOT also pay |
+| O | Open/Closed | if-else chains -> Factory/Strategy; add class, don't modify |
+| L | Liskov Substitution | Penguin.fly() throwing = violation |
+| I | Interface Segregation | Flyable/Swimmable instead of fat Bird |
+| D | Dependency Inversion | Controller depends on Strategy INTERFACE, injected |
+
+## 13. Relationship vocabulary (used in every design)
+
+| You hold it as a field | **has-a** (composition ◆ if owned/dies-with; aggregation ◇ if swappable) |
+| You implement/extend it | **is-a** |
+| You only use it in a method (param/local) | **uses-a** (dependency) |
+
+RULE THAT KEPT TRIPPING: a concrete strategy **implements** its interface ->
+ALWAYS **is-a**. (NearestAgentStrategy is-a AgentAssignmentStrategy. Every LLD
+had exactly this shape.)
+
+Enum relationships: something HAS an enum value (ParkingSpot has-a SpotType).
+Never "is-a" an enum — you can't extend enums.
+
+---
+
+## 14. What's next
+
+Flip back to `00-roadmap.md` for the full curriculum map, or continue to
+`02-patterns-creational.md` (Singleton, Factory family — including the full
+Factory Method deep dive — and Builder).

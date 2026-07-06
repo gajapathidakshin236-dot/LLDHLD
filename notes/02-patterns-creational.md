@@ -1,24 +1,254 @@
-# 10 — Factory Method
+# 02 — Design Patterns: Creational (Singleton, Factory family, Builder)
 
-> Status: deep-dive note. Pairs with runnable code at `src/main/java/com/company/factorymethod/`.
->
-> Why this is the next gap for you: you already have **Abstract Factory** in `src/main/java/com/company/abstractfactory/`, but **Factory Method** is missing — and Factory Method is the smaller, simpler pattern that Abstract Factory is *built on top of*. People mix them up constantly. Getting this one solid makes the difference clean forever.
+A **design pattern** = a named, reusable solution to a recurring design problem.
+Not code you copy — a *shape* you recognize and apply.
+
+> This file merges the session notes on all three creational patterns with the
+> full **Factory Method deep dive** (§B below), which pairs with runnable code
+> at `src/main/java/com/company/factorymethod/`.
 
 ---
 
-## 1. What is Factory Method, in one sentence?
+## SINGLETON — "exactly one instance, globally accessible"
+
+### First: what is an "instance"?
+A **class** is a blueprint. An **instance** is a real object built from it,
+living in memory. `new Dog()` three times = three instances. **Singleton** = a
+class designed so only ONE instance can ever exist; everyone shares it.
+
+Why: one shared log file, one config, one connection pool. Copies would each
+have their own state, defeating the point.
+
+### The universal shape
+```
+private static <field to hold the one instance>
+private constructor                  (nobody else can `new` it)
+public static getInstance()          (the single access point)
+```
+
+`private static Logger instance;` = a SLOT at class level (static = one copy for
+the whole class, not per object). `if (instance == null)` asks: "is the slot
+still empty? if so build the object and fill it; else return what's there."
+
+### The 5 levels (each fixes the previous one's flaw)
+
+**Level 1 — Basic (lazy, NOT thread-safe)**
+```java
+public static Logger getInstance() {
+    if (instance == null) instance = new Logger();   // two threads can BOTH see null
+    return instance;                                  // -> two instances. BUG.
+}
+```
+
+**Level 2 — synchronized method (safe, slow)**
+```java
+public static synchronized Logger getInstance() { ... same body ... }
+```
+`synchronized` on a static method locks on `Logger.class` — one thread at a time
+in the whole JVM. Correct, but EVERY call locks forever, even after the instance
+exists. Fine for low-traffic (config at startup), bad on hot paths.
+
+**Level 3 — Double-Checked Locking (DCL)**
+```java
+private static volatile Logger instance;      // volatile is REQUIRED
+public static Logger getInstance() {
+    if (instance == null) {                    // check 1: no lock, fast path
+        synchronized (Logger.class) {
+            if (instance == null) {            // check 2: inside lock
+                instance = new Logger();
+            }
+        }
+    }
+    return instance;
+}
+```
+- Check 1 skips the lock once the instance exists (fast).
+- Check 2 handles two threads that both passed check 1 before either locked.
+- **Why volatile:** `new Logger()` is really (1) allocate (2) initialize
+  (3) assign reference. The JVM may reorder 1->3->2; another thread could then
+  see a non-null but HALF-BUILT object. `volatile` forbids that reordering.
+  Classic interview gotcha.
+
+**Level 4 — Bill Pugh / static holder (the recommended default)**
+```java
+public class ConfigManager {
+    private ConfigManager() { System.out.println("Loading config..."); }
+
+    private static class Holder {
+        private static final ConfigManager INSTANCE = new ConfigManager();
+    }
+    public static ConfigManager getInstance() { return Holder.INSTANCE; }
+}
+```
+Why it works — TWO JVM guarantees:
+1. A nested class is loaded only when FIRST REFERENCED -> `Holder` (and hence
+   INSTANCE) isn't created until `getInstance()` is first called = **lazy**.
+2. Class initialization is **thread-safe and exactly-once by JVM spec** — if 10
+   threads hit it simultaneously, the JVM picks one to initialize; others wait.
+So: lazy + thread-safe with ZERO synchronization code. `Holder` is just a
+private drawer whose only job is to hold the instance. There is NO `if
+(instance == null)` in Bill Pugh — class loading IS the null check.
+
+MISTAKE I MADE FIRST TIME: adding an `if (instance == null)` inside Holder and
+mixing Level 2's style into Level 4. They are different mechanisms — Bill Pugh
+has no check, no method on Holder, just one static final field.
+
+Also: `static` cannot go on a TOP-LEVEL class (`class static X` won't compile).
+It's valid on nested classes, fields, methods, and static blocks.
+
+**Level 5 — Enum singleton (bulletproof)**
+```java
+public enum Logger { INSTANCE; public void log(String m) { ... } }
+```
+Thread-safe, serialization-safe, and REFLECTION-PROOF (reflection can break
+levels 1-4 by force-calling the private constructor via setAccessible; enums
+reject that). Downside: can't extend another class.
+
+### Comparison table
+| Approach | Lazy | Thread-safe | Reflection-safe | Verdict |
+|---|---|---|---|---|
+| Eager static final | no | yes | no | fine if cheap to build |
+| synchronized method | yes | yes | no | slow on hot paths |
+| DCL + volatile | yes | yes | no | classic, valid |
+| Bill Pugh holder | yes | yes | no | **best default** |
+| Enum | yes | yes | yes | **bulletproof** |
+
+### Singleton in PRODUCTION — why it's often the wrong tool
+1. **Concurrency** — a singleton holding mutable state is shared by all threads;
+   coarse locking kills throughput, fine-grained locking is complex.
+2. **Testability** — global state leaks between tests; `X.getInstance()`
+   hardcoded means you can't inject a mock.
+3. **Hidden coupling** — ANY code anywhere can grab it and mutate it;
+   dependencies become invisible.
+4. **Doesn't scale horizontally** — each JVM behind a load balancer has its OWN
+   singleton; "one instance" becomes a lie. State must move to Redis/DB anyway.
+5. Lifecycle: can't have two later (second parking lot!), can't easily reset.
+
+**The modern replacement:** ONE instance managed by DI (Spring bean, singleton
+scope) — same effect, but injected, testable, explicit. GoF Singleton is fine
+only for genuinely stateless things: config, loggers, connection pools.
+
+**Two-question test before using Singleton:**
+1. Mutable per-user/request state? YES -> don't.
+2. Would I want to mock it in tests? YES -> don't (use DI).
+
+### Interview lines
+> "I'd use Bill Pugh's holder — lazy and thread-safe via JVM class-loading
+> guarantees, no synchronization — or enum if I need reflection safety."
+> "In production I'd prefer a DI-managed single instance: hand-rolled singletons
+> hurt concurrency, testability, and don't survive horizontal scaling."
+
+---
+
+# THE FACTORY FAMILY
+
+## A. Overview — Simple Factory vs Factory Method vs Abstract Factory
+
+### The disease all three cure
+```java
+if (type.equals("EMAIL")) { new EmailNotification().send(m); }
+else if (type.equals("SMS")) { new SMSNotification().send(m); }
+// business logic full of `new` + if-else. Every new type = MODIFY this class
+// (OCP violated), tight coupling to every concrete class, untestable.
+```
+Cure: **"Don't ask `new` — ask a factory."** Creation moves out of business logic.
+
+### 1) Simple Factory (most common in practice; not officially GoF)
+```java
+class NotificationFactory {
+    public Notification create(String type) {
+        switch (type) {
+            case "EMAIL": return new EmailNotification();
+            case "SMS":   return new SMSNotification();
+            default: throw new IllegalArgumentException("Unknown: " + type);
+        }
+    }
+}
+class NotificationService {
+    private final NotificationFactory factory;     // injected
+    public void send(String type, String msg) {
+        factory.create(type).send(msg);            // knows only the INTERFACE
+    }
+}
+```
+The switch didn't disappear — it moved to ONE isolated place. Business logic is
+clean; adding a type = new class + one factory line.
+
+### 2) Factory Method (the real GoF pattern — INHERITANCE decides)
+The "factory" is an overridable METHOD in a base class. The base defines the
+ALGORITHM; subclasses decide which product it uses.
+```java
+abstract class CheckoutFlow {
+    public void checkout(double amount) {
+        Payment p = createPayment();      // <- the factory method
+        p.pay(amount);
+    }
+    protected abstract Payment createPayment();   // subclasses decide
+}
+class UPICheckout  extends CheckoutFlow { protected Payment createPayment() { return new UPIPayment(); } }
+class CardCheckout extends CheckoutFlow { protected Payment createPayment() { return new CardPayment(); } }
+```
+Real examples: `Collection.iterator()`, Spring `BeanFactory`, servlet lifecycle.
+
+(Full deep dive on this pattern in §B below.)
+
+### 3) Abstract Factory (creates a FAMILY that must match)
+Multiple product types that vary TOGETHER. Cross-platform UI: a Windows button
+must pair with a Windows checkbox, never a Mac one.
+```java
+interface UIFactory { Button createButton(); Checkbox createCheckbox(); }
+class WindowsUIFactory implements UIFactory { ...windows versions... }
+class MacUIFactory     implements UIFactory { ...mac versions... }
+```
+Real example: JDBC — one driver produces matched Connection + Statement +
+ResultSet. DocumentBuilderFactory.
+
+### THE KILLER TEST (this fixed my interview blind spot)
+> **Step 1: COUNT THE PRODUCT TYPES being created.**
+>   - ONE product type -> Simple Factory or Factory Method.
+>   - MULTIPLE types that must match as a set -> **Abstract Factory**.
+> **Step 2 (if one type): who decides the concrete?**
+>   - A switch on input in one class -> **Simple Factory**.
+>   - A subclass overriding a create method -> **Factory Method**.
+
+Do NOT count subclasses — count PRODUCT TYPES. "Many subclasses" is just
+polymorphism, not Abstract Factory.
+
+Worked classifications:
+- Level subclasses each override createEnemies() -> ONE product (Enemy),
+  subclass decides -> **Factory Method**.
+- MySQL vs Postgres each with matched Connection/Statement/ResultSet -> THREE
+  products varying together -> **Abstract Factory**.
+- Dropdown value -> one method returns matching processor -> **Simple Factory**.
+
+### Interview line
+> "Factory Method creates ONE product with inheritance choosing the concrete
+> type; Abstract Factory creates a FAMILY of matched products. Quick test:
+> count the product types. JDBC drivers are the canonical Abstract Factory."
+
+---
+
+## B. Factory Method — the full deep dive
+
+> Pairs with runnable code at `src/main/java/com/company/factorymethod/`.
+>
+> Why this got its own deep dive: the repo already had **Abstract Factory** in
+> `src/main/java/com/company/abstractfactory/`, but **Factory Method** was
+> missing — and Factory Method is the smaller, simpler pattern that Abstract
+> Factory is *built on top of*. People mix them up constantly. Getting this one
+> solid makes the difference clean forever.
+
+### B.1 What is Factory Method, in one sentence?
 
 > **Factory Method** is a creational pattern in which a class **defines a method whose return type is an interface or abstract class**, and **subclasses decide which concrete class to instantiate**.
 
 In other words: the parent class says *"someone is going to create a `Transport`, but I'm not going to commit to which kind. My subclasses will."*
 
-That's it. One method, returns an abstraction, gets overridden by subclasses. The pattern is genuinely that small. Everything else in this note is *why* that tiny structure is worth giving a name.
+That's it. One method, returns an abstraction, gets overridden by subclasses. The pattern is genuinely that small. Everything else in this section is *why* that tiny structure is worth giving a name.
 
----
+### B.2 The problem it solves
 
-## 2. The problem it solves
-
-### 2.1 The motivating scenario
+#### The motivating scenario
 
 You're building a **logistics management app**. Originally it only handles **road logistics** with trucks. The core method looks like this:
 
@@ -36,7 +266,7 @@ This is fine. It works. It ships.
 
 Then the requirement changes: the company expands into **sea logistics**. You need to also deliver with `Ship` objects.
 
-### 2.2 The naive fix (don't do this)
+#### The naive fix (don't do this)
 
 You're tempted to add an `if`:
 
@@ -62,7 +292,7 @@ Four problems with this code:
 3. **`if` chains never stay at one level.** Soon the chain forks: "if SEA and the package weighs more than 1 ton, use FreightShip; otherwise use Speedboat." The chain becomes a maze.
 4. **Hard to test.** You can't substitute a fake `Truck` without mocking the `new` operator (which Java makes painful).
 
-### 2.3 The Factory Method fix
+#### The Factory Method fix
 
 You **don't decide** which transport to build inside `Logistics`. Instead, you **declare** that *someone* will build one, and you **defer the decision** to a subclass:
 
@@ -100,9 +330,7 @@ public class SeaLogistics extends Logistics {
 
 That's the entire pattern. Adding a `Drone` later means writing one new class (`AirLogistics extends Logistics`). You **don't touch** `Logistics` again. **OCP satisfied.**
 
----
-
-## 3. GoF participants (the vocabulary you'll need in interviews)
+### B.3 GoF participants (the vocabulary you'll need in interviews)
 
 The original *Design Patterns* book names four roles:
 
@@ -133,9 +361,7 @@ A picture:
 
 The two hierarchies are **parallel**. That parallel structure is the signature of Factory Method — when you see it on a whiteboard, this is the pattern.
 
----
-
-## 4. Why bother — what does this buy you?
+### B.4 Why bother — what does this buy you?
 
 Concretely:
 
@@ -145,9 +371,7 @@ Concretely:
 - **Decoupling.** Client code only ever references `Transport` and `Logistics`. The concrete classes `Truck`/`Ship` are touched only at the boundaries.
 - **Easier to evolve product families together.** If `Truck` needs an extra field for a road-permit, you change `Truck` + `RoadLogistics` — `SeaLogistics` doesn't know or care.
 
----
-
-## 5. What it costs
+### B.5 What it costs
 
 Patterns are never free. Factory Method's price:
 
@@ -157,11 +381,9 @@ Patterns are never free. Factory Method's price:
 
 If you have **only one product type, ever**, do NOT use this pattern. A plain constructor or a `new` call is fine. Reach for Factory Method when you *expect at least two* concrete products and you want adding a third to be cheap.
 
----
+### B.6 Variations you'll meet in the wild
 
-## 6. Variations you'll meet in the wild
-
-### 6.1 Factory Method with a default implementation
+#### B.6.1 Factory Method with a default implementation
 
 The creator gives a default product, and subclasses override only if they want something else:
 
@@ -178,7 +400,7 @@ public abstract class Logistics {
 
 Useful when 80% of subclasses want the same thing.
 
-### 6.2 Parameterised Factory Method
+#### B.6.2 Parameterised Factory Method
 
 The factory method takes an argument that picks between a small, *known* set of products:
 
@@ -192,9 +414,9 @@ protected Transport createTransport(TransportType type) {
 }
 ```
 
-This is the spot where Factory Method **edges into Simple Factory** — see §7. The line is: if subclasses still override it, it's Factory Method; if there are no subclasses and it's just a static helper on a `TransportFactory` class, it's "Simple Factory" (which is not actually a GoF pattern — see §7).
+This is the spot where Factory Method **edges into Simple Factory** — see B.7. The line is: if subclasses still override it, it's Factory Method; if there are no subclasses and it's just a static helper on a `TransportFactory` class, it's "Simple Factory" (which is not actually a GoF pattern).
 
-### 6.3 Static Factory Methods (Joshua Bloch, *Effective Java*)
+#### B.6.3 Static Factory Methods (Joshua Bloch, *Effective Java*)
 
 `Item 1` of *Effective Java* recommends **static factory methods** instead of constructors. Different idea, same family. Examples in the JDK:
 
@@ -214,9 +436,7 @@ Why use a static factory method instead of `new`?
 
 These are NOT GoF Factory Method (which requires inheritance). But they solve the same family of problems and you'll see them called "factory methods" colloquially. Be precise about which you mean.
 
----
-
-## 7. Factory Method vs. Abstract Factory vs. "Simple Factory"
+### B.7 Factory Method vs. Abstract Factory vs. "Simple Factory"
 
 This is the part everyone gets wrong. Memorise this table.
 
@@ -227,7 +447,7 @@ This is the part everyone gets wrong. Memorise this table.
 | Creates **one** product?       | Yes                                             | Yes                                                           | No — creates a **family** of related products                           |
 | Adds new product type by…      | Editing the `switch`                            | Adding a new ConcreteCreator subclass                         | Adding a new factory class implementing the abstract factory interface  |
 | Uses inheritance?              | No                                              | Yes (subclass overrides)                                      | Yes (the factory hierarchy) — and usually contains Factory Methods inside |
-| Your repo example              | n/a                                             | `com.company.factorymethod` (this note)                       | `com.company.abstractfactory`                                           |
+| Your repo example              | n/a                                             | `com.company.factorymethod`                                   | `com.company.abstractfactory`                                           |
 
 The short version, memorise this:
 
@@ -238,9 +458,7 @@ Or even shorter: *Abstract Factory is a bunch of Factory Methods bundled into on
 
 In your `abstractfactory` package, `GUIFactory#createButton` and `GUIFactory#createCheckbox` are both factory methods. The reason `GUIFactory` exists is to ensure you get a matched `WindowsButton` + `WindowsCheckbox`, never a `WindowsButton` + `MacCheckbox`. That's the "family" guarantee that Factory Method alone doesn't give you.
 
----
-
-## 8. Factory Method in the JDK (the ones you've already touched without noticing)
+### B.8 Factory Method in the JDK (the ones you've already touched without noticing)
 
 You don't need to memorise these, but recognising them in your own code is the goal.
 
@@ -252,9 +470,7 @@ You don't need to memorise these, but recognising them in your own code is the g
 
 When you see a method named `getInstance`, `of`, `from`, `newInstance`, `create*`, or `valueOf` returning an interface or abstract type — start asking whether it's a Factory Method (subclass overrides) or a Static Factory (no overriding).
 
----
-
-## 9. Where Factory Method goes wrong (the edge cases)
+### B.9 Where Factory Method goes wrong (the edge cases)
 
 1. **You don't actually have two product types.** Then you're paying the indirection tax for nothing. Just `new` it.
 2. **The "creator" has nothing to do besides creating.** Then it's not really a creator — it's just a factory class, and you probably want Abstract Factory or a static factory method.
@@ -264,20 +480,14 @@ When you see a method named `getInstance`, `of`, `from`, `newInstance`, `create*
 6. **Two-level inheritance — creator subclasses also have their own variants.** This is where Factory Method's inheritance bites. Refactor toward composition.
 7. **`createTransport()` is `public`.** It usually shouldn't be. The factory method is an *internal* extension point, not part of the creator's public API. Mark it `protected` (`abstract`). Clients call `planDelivery()`, not `createTransport()`.
 
----
-
-## 10. When NOT to use Factory Method
+### B.10 When NOT to use Factory Method
 
 - You only have one concrete product and no realistic expectation of more.
 - The product is a pure value object with no behaviour — just use a constructor.
 - The choice of product depends on data that's only available at the call site — pass a factory in (composition / Strategy), don't subclass.
 - You're using a DI container (Spring, Guice) — let the container handle "which concrete type" via configuration. Factory Method in that context is usually a code smell.
 
----
-
-## 11. Comparing with what you've already coded
-
-You have four creational patterns in this repo already. Slot Factory Method into the picture:
+### B.11 Comparing with the other creational patterns in this repo
 
 | Pattern             | Question it answers                                                | Returns                       |
 | ------------------- | ------------------------------------------------------------------ | ----------------------------- |
@@ -289,9 +499,7 @@ You have four creational patterns in this repo already. Slot Factory Method into
 
 Notice: **Abstract Factory uses Factory Method internally**. Builder and Factory Method are orthogonal — you'll sometimes see a Factory Method that returns a Builder.
 
----
-
-## 12. Exercises
+### B.12 Exercises
 
 (Do at least 1, 2, 3. They each take ~10 minutes.)
 
@@ -303,9 +511,7 @@ Notice: **Abstract Factory uses Factory Method internally**. Builder and Factory
 6. Open `java.util.Calendar` source (Cmd-click in IntelliJ). Read `getInstance(...)`. Decide whether you'd call it Factory Method or Static Factory Method (Bloch-style). Defend your answer.
 7. (Senior-track.) The Spring `BeanFactory` looks like a factory but is closer to Service Locator. In one paragraph: how is `BeanFactory#getBean(Class)` different from a Factory Method, and why does that matter for testability?
 
----
-
-## 13. Recap (one screen)
+### B.13 Recap (one screen)
 
 - Factory Method = method returning an interface, subclasses pick the concrete class.
 - Four GoF roles: Product, ConcreteProduct, Creator, ConcreteCreator.
@@ -314,4 +520,70 @@ Notice: **Abstract Factory uses Factory Method internally**. Builder and Factory
 - *Static factory methods* (Bloch) are a different beast — same family, no inheritance.
 - Don't use it for one-product cases, for value objects, or when DI containers already pick concrete types for you.
 
-Next note: `11-abstract-factory.md` — we'll **revisit your existing code** with the GoF vocabulary, since now you know the smaller pattern it's built on top of. After that we'll go through Structural patterns (Adapter, Decorator, Proxy, Composite, Facade, Bridge, Flyweight).
+---
+
+## BUILDER — step-by-step construction of complex objects
+
+### The two diseases
+**Telescoping constructors:**
+```java
+new Pizza("Large","Thin",true,false,true,false,true,false,true,false);
+// what is the 7th boolean?? swap two and the compiler won't notice.
+```
+**JavaBeans setters:** object is mutable, can exist half-built between setters,
+no way to enforce required fields.
+
+### The pattern
+```java
+public class User {
+    private final String name;                 // ALL fields final -> immutable
+    private final String email; private final int age;
+
+    private User(Builder b) {                  // PRIVATE ctor: only Builder builds
+        this.name = b.name; this.email = b.email; this.age = b.age;
+    }
+
+    public static class Builder {              // static nested
+        private final String name;             // REQUIRED -> builder ctor
+        private String email = "N/A";          // optional -> defaulted
+        private int age = 0;
+
+        public Builder(String name) { this.name = name; }
+        public Builder email(String e) { this.email = e; return this; }  // return this
+        public Builder age(int a)      { this.age = a;   return this; }  // = chaining
+
+        public User build() {                  // THE validation gate
+            if (name == null || name.isEmpty()) throw new IllegalStateException("name required");
+            if (age < 0) throw new IllegalStateException("age >= 0");
+            return new User(this);
+        }
+    }
+}
+// Usage:
+User u = new User.Builder("Alice").email("a@x.com").age(28).build();
+```
+
+### The mechanics that matter
+- **`return this`** in each setter is what enables the fluent chain — each call
+  returns the Builder itself, so the next call attaches on.
+- **`build()` is the single validation gate** — required fields + cross-field
+  rules checked in ONE place, before the object can exist.
+- **Immutability**: final fields, no setters on the product, private ctor.
+- Required = builder constructor args; optional = chained methods with defaults.
+
+### When to use / not
+Use: 4+ params, many optional, want immutability + validation.
+Skip: simple 2-param objects (overkill). Real work: Lombok `@Builder` generates
+all this — know the manual version for interviews.
+
+### Builder vs Factory
+Factory decides **WHAT type** to make (one call). Builder decides **HOW to
+configure** one complex object (many calls then build()).
+
+### Real examples
+StringBuilder, HttpRequest.newBuilder(), every AWS SDK client, Stream.builder().
+
+### Interview line
+> "Builder solves telescoping constructors: fluent API, immutable product,
+> validation centralized in build(). StringBuilder and HttpRequest.Builder are
+> the canonical examples."
