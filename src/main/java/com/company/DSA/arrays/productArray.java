@@ -10,7 +10,7 @@ public class productArray {
         int[] prefix = new int[n];
         int[] suffix = new int[n];
         int[] output = new int[n];
-
+//[2,3,4]
         // prefix[i] = product of everything LEFT of i
         prefix[0] = 1;
         for (int i = 1; i < n; i++) {

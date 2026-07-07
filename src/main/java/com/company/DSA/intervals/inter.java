@@ -47,9 +47,9 @@ public class inter {
         // [48, 48, 24, 6]
         suffix.add(1);//6
 
-        for(int i = n - 1; i >= 0; i--) {
+        for(int i = n - 2; i >= 0; i--) {
 
-            suffix.add(Arr.get(i-1)*suffix.get(n-i-1));
+            suffix.add(Arr.get(i+1)*suffix.get(i+1));
         }
 
 
