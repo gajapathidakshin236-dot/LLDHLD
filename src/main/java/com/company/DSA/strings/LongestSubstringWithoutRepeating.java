@@ -17,8 +17,9 @@ public class LongestSubstringWithoutRepeating {
 
         while (right < n) {
 
-            char ch = s.charAt(right);
+            char ch = s.charAt(right);//a
 
+            //[a]-> 3>=0 !=-1 because the char is already seen 2wice
             if (hash[ch] >= left) {
                 left = hash[ch] + 1;
             }

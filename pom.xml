@@ -10,7 +10,9 @@
   <name>LLDHLD</name>
 
   <properties>
-    <maven.compiler.release>21</maven.compiler.release>
+    <!-- 17 matches the ms-17 JDK this project uses in IntelliJ (.idea/misc.xml).
+         Was 21, which fails on a JDK 17 with "release version 21 not supported". -->
+    <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
     <dependencies>
@@ -29,9 +31,9 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
         <configuration>
+          <!-- release alone is enough; the old source/target 25 lines contradicted
+               it and would demand a JDK 25 nobody here has. -->
           <release>${maven.compiler.release}</release>
-            <source>25</source>
-            <target>25</target>
         </configuration>
       </plugin>
     </plugins>

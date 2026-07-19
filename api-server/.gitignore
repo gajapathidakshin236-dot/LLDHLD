@@ -1,0 +1,14 @@
+# Maven build output (generated, never commit)
+target/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS junk
+Thumbs.db
+.DS_Store

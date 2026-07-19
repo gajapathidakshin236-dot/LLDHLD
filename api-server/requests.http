@@ -1,0 +1,55 @@
+### requests.http - ready-made requests for every endpoint.
+### Works in IntelliJ (open file, click the green arrow next to each request)
+### or VS Code with the "REST Client" extension ("Send Request" link).
+### Server must be running. PowerShell equivalents are in RUN-LOCAL.md.
+
+### 0. Ping - simplest endpoint (and the rate-limit demo target)
+GET http://localhost:8080/api/ping
+
+### 1. List all tasks
+GET http://localhost:8080/api/tasks
+
+### 2. List only completed tasks
+GET http://localhost:8080/api/tasks?completed=true
+
+### 3. Get one task by id
+GET http://localhost:8080/api/tasks/1
+
+### 4. Create a new task  (expect: 201 Created + Location header)
+POST http://localhost:8080/api/tasks
+Content-Type: application/json
+
+{
+  "title": "My first POST request",
+  "description": "Created straight from requests.http"
+}
+
+### 5. Update task 1  (PUT replaces title/description/completed)
+PUT http://localhost:8080/api/tasks/1
+Content-Type: application/json
+
+{
+  "title": "Learn Spring Boot basics - DONE",
+  "description": "Finished the notes",
+  "completed": true
+}
+
+### 6. Delete task 2  (expect: 204 No Content)
+DELETE http://localhost:8080/api/tasks/2
+
+### 7. Validation error demo: blank title  (expect: 400 + fieldErrors)
+POST http://localhost:8080/api/tasks
+Content-Type: application/json
+
+{
+  "title": "",
+  "description": "This will be rejected"
+}
+
+### 8. Not-found demo  (expect: 404 JSON error)
+GET http://localhost:8080/api/tasks/9999
+
+### 9. RATE LIMIT demo: click request #0 six times fast.
+### Requests 1-5 return 200 (burst capacity), the 6th returns 429 from
+### YOUR TokenBucketStrategy. Wait a second -> one token refills -> 200 again.
+GET http://localhost:8080/api/ping

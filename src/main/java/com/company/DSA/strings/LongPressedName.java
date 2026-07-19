@@ -6,7 +6,6 @@ package com.company.DSA.strings;
  *  PROBLEM
  *  -------
  *  Return true if typed could be the long-pressed version of name.
- *
  *  EXAMPLES
  *  --------
  *  Ex1: name="alex",   typed="aaleex"   → true

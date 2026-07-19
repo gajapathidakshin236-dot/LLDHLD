@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- ============================================================
+       PARENT: we inherit from Spring Boot's "starter parent".
+       It pre-defines tested versions for hundreds of libraries,
+       so we never type version numbers for our dependencies below.
+       ============================================================ -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.16</version>
+    <relativePath/> <!-- always resolve the parent from the online repository -->
+  </parent>
+
+  <!-- Identity of OUR project (standalone - independent of the root LLDHLD pom) -->
+  <groupId>com.company</groupId>
+  <artifactId>api-server</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>api-server</name>
+  <description>Local API playground: Task CRUD + H2 database + the LLDHLD rate limiter running as a real HTTP 429 filter</description>
+
+  <properties>
+    <!-- Compile for Java 17 - matches the ms-17 JDK this repo's IntelliJ project uses.
+         (Spring Boot 3.x minimum is 17; a newer installed JDK also works.) -->
+    <java.version>17</java.version>
+  </properties>
+
+  <dependencies>
+    <!-- Web layer: embedded Tomcat server + Spring MVC + JSON (Jackson) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- Database layer: Spring Data JPA + Hibernate (talks SQL for us) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <!-- Bean Validation: makes @NotBlank / @Size / @Valid work -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!-- H2: a small database engine that runs INSIDE the app (in memory) -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Testing: JUnit 5 + MockMvc + assertions. Run with: mvnw test -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Lets Maven run/package the app:  mvnw spring-boot:run  -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
