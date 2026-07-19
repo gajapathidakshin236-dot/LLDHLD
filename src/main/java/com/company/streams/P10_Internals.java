@@ -10,11 +10,15 @@ public class P10_Internals {
 
     // Q97 [code] Stream.iterate(1, n->n+1).map(square).limit(3) -> the squares.
     //     (q97note: why doesn't it run forever even though iterate is infinite?)
-    static List<Integer> q97() { return null; }
-    static String q97note() {  return Stream.iterate(1, n -> n + 1)
-            .map(n -> n * n)
-            .limit(3)
-            .collect(Collectors.toList()); }
+    // [fixed] the stream pipeline returns List<Integer>, so it belongs in q97()
+    // (it was inside q97note(), whose return type is String -> compile error).
+    static List<Integer> q97() {
+        return Stream.iterate(1, n -> n + 1)
+                .map(n -> n * n)
+                .limit(3)
+                .collect(Collectors.toList());
+    }
+    static String q97note() { return "limit(3) makes the infinite iterate() short-circuit"; }
 
     // Q98 [why] Reusing one Stream for two pipelines -> which exception, and the fix?
     static String q98() { return ""; }

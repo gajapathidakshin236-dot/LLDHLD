@@ -1,5 +1,6 @@
 package com.company;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,6 +36,17 @@ public class interview {
             val2=val2*a[j]; // 6*4=24
             suffix[j]=val2;
         }
+
+        // [completed so the file compiles] product-of-array-except-self:
+        // answer[i] = product of everything left of i * everything right of i
+        // e.g. [2,4,6] -> [24,12,8], matching the comments above.
+        List<Integer> result = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            int left  = (i > 0)     ? prefix[i - 1] : 1;
+            int right = (i < n - 1) ? suffix[i + 1] : 1;
+            result.add(left * right);
+        }
+        return result;
 
 
 
@@ -95,4 +107,5 @@ public class interview {
     * */
 
 
+}
 }

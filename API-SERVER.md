@@ -9,7 +9,7 @@ A complete REST API you run on **your own machine**, built with **Spring Boot 3.
 
 ## Quickstart
 
-**IntelliJ (recommended):** File → Open → select this `api-server` folder → wait for Maven import → open `ApiServerApplication` → click the green ▶.
+**IntelliJ (recommended):** File → Open → select the LLDHLD folder → wait for Maven import → open `ApiServerApplication` → click the green ▶.
 
 **Terminal:** `cd api-server` then `.\mvnw.cmd spring-boot:run`
 
@@ -33,7 +33,7 @@ Any `/api/*` request may also answer **429 Too Many Requests** — that's your t
 ## Layout
 
 ```
-api-server/
+
 ├── pom.xml / mvnw.cmd / .mvn/          build definition + self-installing Maven
 ├── requests.http                        click-to-run requests (IntelliJ / VS Code REST Client)
 ├── RUN-LOCAL.md · HOW-TO-ADD-AN-API.md · LEARNING-NOTES.md

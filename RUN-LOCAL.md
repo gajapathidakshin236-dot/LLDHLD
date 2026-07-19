@@ -8,9 +8,9 @@ Two ways to run: **IntelliJ** (you already use it for this repo — easiest) or 
 
 ### 1. Open api-server as its own project
 
-File → **Open** → navigate to `Documents\GitHub\LLDHLD\api-server` → OK → "Trust project". IntelliJ detects `pom.xml` and imports the Maven project — first time it downloads Spring Boot libraries (~150–200 MB, a few minutes; watch the progress bar bottom-right).
+File → **Open** → navigate to `Documents\GitHub\LLDHLD` → OK → "Trust project". IntelliJ detects `pom.xml` and imports the Maven project — first time it downloads Spring Boot libraries (~150–200 MB, a few minutes; watch the progress bar bottom-right).
 
-> Open the `api-server` folder itself, not LLDHLD — the root pom doesn't know about this module, so opening the root won't import it automatically. (If you prefer one window: open LLDHLD, then right-click `api-server/pom.xml` → **Add as Maven Project**.)
+> Open the LLDHLD folder — the root pom doesn't know about this module, so opening the root won't import it automatically. (If you prefer one window: open LLDHLD, then right-click `pom.xml` → **Add as Maven Project**.)
 
 ### 2. Check the project JDK (once)
 
@@ -47,7 +47,7 @@ Needs Java 17+ visible to the terminal. Check: `java -version`.
 Then:
 
 ```powershell
-cd $env:USERPROFILE\Documents\GitHub\LLDHLD\api-server
+cd $env:USERPROFILE\Documents\GitHub\LLDHLD
 .\mvnw.cmd spring-boot:run
 ```
 

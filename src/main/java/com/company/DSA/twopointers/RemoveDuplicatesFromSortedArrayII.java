@@ -31,6 +31,6 @@ public class RemoveDuplicatesFromSortedArrayII {
              write++;
          }
      }
-
+     return write; // [fixed] was missing -> "missing return statement" compile error
  }
 }
