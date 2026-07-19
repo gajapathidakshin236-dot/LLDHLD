@@ -1,0 +1,182 @@
+{
+  "info": {
+    "name": "booking-service (localhost)",
+    "description": "Full CRUD tour of the booking-service. Every request already carries the X-Tenant-Id header the TenantFilter requires. Run top to bottom. baseUrl variable = http://localhost:8080.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "tenant", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "0 - Health (no tenant needed)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/actuator/health"
+      }
+    },
+    {
+      "name": "1 - GET all shows",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-Tenant-Id", "value": "{{tenant}}" } ],
+        "url": "{{baseUrl}}/api/v1/shows"
+      }
+    },
+    {
+      "name": "2 - GET one show (cache miss then hit - watch app log)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-Tenant-Id", "value": "{{tenant}}" } ],
+        "url": "{{baseUrl}}/api/v1/shows/1"
+      }
+    },
+    {
+      "name": "3 - POST create booking (userId not ending in 0 = payment success)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-Tenant-Id", "value": "{{tenant}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"showId\": 1,\n  \"userId\": 7001,\n  \"seatNo\": \"P1\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/bookings"
+      }
+    },
+    {
+      "name": "4 - POST declined payment (userId ends in 0 -> status FAILED)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-Tenant-Id", "value": "{{tenant}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"showId\": 1,\n  \"userId\": 7010,\n  \"seatNo\": \"P2\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/bookings"
+      }
+    },
+    {
+      "name": "5 - POST duplicate seat -> 409 Conflict",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-Tenant-Id", "value": "{{tenant}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"showId\": 1,\n  \"userId\": 7002,\n  \"seatNo\": \"A1\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/bookings"
+      }
+    },
+    {
+      "name": "6 - POST validation failure -> 400 with fieldErrors",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-Tenant-Id", "value": "{{tenant}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"showId\": 1,\n  \"userId\": 7003\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/bookings"
+      }
+    },
+    {
+      "name": "7 - GET booking by id (use id from request 3's response)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-Tenant-Id", "value": "{{tenant}}" } ],
+        "url": "{{baseUrl}}/api/v1/bookings/106"
+      }
+    },
+    {
+      "name": "8 - GET bookings offset page (totals cost a COUNT query)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-Tenant-Id", "value": "{{tenant}}" } ],
+        "url": "{{baseUrl}}/api/v1/bookings?page=0&size=5&sort=createdAt,desc"
+      }
+    },
+    {
+      "name": "9 - GET bookings by status (Slice - hasNext, NO totals)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-Tenant-Id", "value": "{{tenant}}" } ],
+        "url": "{{baseUrl}}/api/v1/bookings/by-status?status=CONFIRMED&size=5"
+      }
+    },
+    {
+      "name": "10 - GET keyset feed page 1 (copy nextCursor from response)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-Tenant-Id", "value": "{{tenant}}" } ],
+        "url": "{{baseUrl}}/api/v1/bookings/feed?size=5"
+      }
+    },
+    {
+      "name": "11 - GET feed page 2 (paste cursor value into the URL)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-Tenant-Id", "value": "{{tenant}}" } ],
+        "url": "{{baseUrl}}/api/v1/bookings/feed?size=5&cursor=PASTE_NEXTCURSOR_HERE"
+      }
+    },
+    {
+      "name": "12 - PUT full show update (every field required)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "X-Tenant-Id", "value": "{{tenant}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Inception (IMAX Remaster)\",\n  \"venue\": \"PVR Phoenix Screen 4\",\n  \"totalSeats\": 220,\n  \"priceCents\": 55000,\n  \"startsAt\": \"2026-07-25T18:30:00Z\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/shows/1"
+      }
+    },
+    {
+      "name": "13 - PATCH partial update (title only)",
+      "request": {
+        "method": "PATCH",
+        "header": [ { "key": "X-Tenant-Id", "value": "{{tenant}}" } ],
+        "url": "{{baseUrl}}/api/v1/shows/1/title?title=Inception+Directors+Cut"
+      }
+    },
+    {
+      "name": "14 - DELETE booking (soft cancel - idempotent, run twice!)",
+      "request": {
+        "method": "DELETE",
+        "header": [ { "key": "X-Tenant-Id", "value": "{{tenant}}" } ],
+        "url": "{{baseUrl}}/api/v1/bookings/106"
+      }
+    },
+    {
+      "name": "15 - Tenant isolation: tenant 2 asks for tenant 1 booking -> 404",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-Tenant-Id", "value": "2" } ],
+        "url": "{{baseUrl}}/api/v1/bookings/106"
+      }
+    },
+    {
+      "name": "16 - Missing tenant header -> 400 from TenantFilter",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/bookings"
+      }
+    }
+  ]
+}

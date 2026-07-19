@@ -1,0 +1,72 @@
+BOOKING-SERVICE API TEST  07/19/2026 17:01:19
+=== 01 GET health (no tenant needed)
+[200] System.Byte[]
+
+=== 02 GET all shows
+[200] [{"id":1,"title":"Inception","venue":"PVR Phoenix","totalSeats":200,"priceCents":45000,"startsAt":"2026-07-22T11:30:25.412561Z"},{"id":2,"title":"Interstellar","venue":"PVR Phoenix","totalSeats":200,"priceCents":45000,"startsAt":"2026-07-23T11:30:25.412561Z"},{"id":3,"title":"The Dark Knight","venue":"INOX Nexus","totalSeats":180,"priceCents":40000,"startsAt":"2026-07-24T11:30:25.412561Z"}]
+
+=== 03 GET show 1 (cache MISS - check app log)
+[200] {"id":1,"title":"Inception","venue":"PVR Phoenix","totalSeats":200,"priceCents":45000,"startsAt":"2026-07-22T11:30:25.412561Z"}
+
+=== 04 GET show 1 again (cache HIT - no SQL)
+[200] {"id":1,"title":"Inception","venue":"PVR Phoenix","totalSeats":200,"priceCents":45000,"startsAt":"2026-07-22T11:30:25.412561Z"}
+
+=== 05 POST booking (userId 7001 -> payment success)
+[201] {"id":106,"showId":1,"userId":7001,"seatNo":"P1","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:31:20.889361Z"}
+
+>>> created booking id = 106
+
+=== 06 POST booking (userId 7010 -> payment DECLINED, status FAILED)
+[201] {"id":107,"showId":1,"userId":7010,"seatNo":"P2","status":"FAILED","priceCents":45000,"createdAt":"2026-07-19T11:31:21.271910Z"}
+
+=== 07 POST duplicate seat A1 -> expect 409
+[409] {"status":409,"error":"Conflict","message":"Seat A1 already booked","path":"/api/v1/bookings","timestamp":"2026-07-19T11:31:21.383346700Z","fieldErrors":[]}
+
+=== 08 POST missing seatNo -> expect 400 + fieldErrors
+[400] {"status":400,"error":"ValidationError","message":"Request validation failed","path":"/api/v1/bookings","timestamp":"2026-07-19T11:31:21.493341300Z","fieldErrors":[{"field":"seatNo","message":"must not be blank"}]}
+
+=== 09 GET booking 106
+[200] {"id":106,"showId":1,"userId":7001,"seatNo":"P1","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:31:20.889361Z"}
+
+=== 10 GET booking 106 as tenant 2 -> expect 404
+[404] {"status":404,"error":"NotFound","message":"Booking 106 not found","path":"/api/v1/bookings/106","timestamp":"2026-07-19T11:31:21.566341800Z","fieldErrors":[]}
+
+=== 11 GET offset page (Page - has totals)
+[200] {"content":[{"id":107,"showId":1,"userId":7010,"seatNo":"P2","status":"FAILED","priceCents":45000,"createdAt":"2026-07-19T11:31:21.271910Z"},{"id":106,"showId":1,"userId":7001,"seatNo":"P1","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:31:20.889361Z"},{"id":1,"showId":1,"userId":1001,"seatNo":"A1","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:29:25.419556Z"},{"id":61,"showId":2,"userId":2001,"seatNo":"B1","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:28:25.445559Z"},{"id":2,"showId":1,"userId":1002,"seatNo":"A2","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:28:25.419556Z"}],"page":0,"size":5,"totalElements":92,"totalPages":19,"first":true,"last":false,"hasNext":true}
+
+=== 12 GET by-status (Slice - hasNext, NO totals)
+[200] {"content":[{"id":106,"showId":1,"userId":7001,"seatNo":"P1","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:31:20.889361Z"},{"id":1,"showId":1,"userId":1001,"seatNo":"A1","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:29:25.419556Z"},{"id":61,"showId":2,"userId":2001,"seatNo":"B1","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:28:25.445559Z"},{"id":2,"showId":1,"userId":1002,"seatNo":"A2","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:28:25.419556Z"},{"id":3,"showId":1,"userId":1003,"seatNo":"A3","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:27:25.419556Z"}],"page":0,"size":5,"hasNext":true}
+
+=== 13 GET keyset feed page 1
+[200] {"content":[{"id":107,"showId":1,"userId":7010,"seatNo":"P2","status":"FAILED","priceCents":45000,"createdAt":"2026-07-19T11:31:21.271910Z"},{"id":106,"showId":1,"userId":7001,"seatNo":"P1","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:31:20.889361Z"},{"id":1,"showId":1,"userId":1001,"seatNo":"A1","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:29:25.419556Z"},{"id":61,"showId":2,"userId":2001,"seatNo":"B1","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:28:25.445559Z"},{"id":2,"showId":1,"userId":1002,"seatNo":"A2","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:28:25.419556Z"}],"nextCursor":"MTc4NDQ2MDUwNTQxOToy","hasMore":true}
+
+>>> nextCursor = MTc4NDQ2MDUwNTQxOToy
+
+=== 14 GET keyset feed page 2 (using cursor)
+[200] {"content":[{"id":3,"showId":1,"userId":1003,"seatNo":"A3","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:27:25.419556Z"},{"id":62,"showId":2,"userId":2002,"seatNo":"B2","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:26:25.445559Z"},{"id":4,"showId":1,"userId":1004,"seatNo":"A4","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:26:25.419556Z"},{"id":5,"showId":1,"userId":1005,"seatNo":"A5","status":"CONFIRMED","priceCents":45000,"createdAt":"2026-07-19T11:25:25.419556Z"},{"id":63,"showId":2,"userId":2003,"seatNo":"B3","status":"CANCELLED","priceCents":45000,"createdAt":"2026-07-19T11:24:25.445559Z"}],"nextCursor":"MTc4NDQ2MDI2NTQ0NTo2Mw","hasMore":true}
+
+=== 15 PUT show 1 (full replacement)
+[200] {"id":1,"title":"Inception (IMAX Remaster)","venue":"PVR Phoenix Screen 4","totalSeats":220,"priceCents":55000,"startsAt":"2026-07-25T18:30:00Z"}
+
+=== 16 PATCH show 1 title only
+[200] {"id":1,"title":"Inception Directors Cut","venue":"PVR Phoenix Screen 4","totalSeats":220,"priceCents":55000,"startsAt":"2026-07-25T18:30:00Z"}
+
+=== 17 GET show 1 (fresh after evict - new title)
+[200] {"id":1,"title":"Inception Directors Cut","venue":"PVR Phoenix Screen 4","totalSeats":220,"priceCents":55000,"startsAt":"2026-07-25T18:30:00Z"}
+
+=== 18 DELETE booking 106 (soft cancel)
+[200] {"id":106,"showId":1,"userId":7001,"seatNo":"P1","status":"CANCELLED","priceCents":45000,"createdAt":"2026-07-19T11:31:20.889361Z"}
+
+=== 19 DELETE booking 106 AGAIN (idempotent - same result)
+[200] {"id":106,"showId":1,"userId":7001,"seatNo":"P1","status":"CANCELLED","priceCents":45000,"createdAt":"2026-07-19T11:31:20.889361Z"}
+
+=== 20 GET bookings with NO tenant header -> expect 400
+[400] {"timestamp":"2026-07-19T11:31:22.179+00:00","status":400,"error":"Bad Request","path":"/api/v1/bookings"}
+
+=== 21 GET bad sort property -> expect 400
+[400] {"status":400,"error":"InvalidSort","message":"No property 'notAField' found for type 'Booking'","path":"/api/v1/bookings","timestamp":"2026-07-19T11:31:22.228712100Z","fieldErrors":[]}
+
+=== 22 GET feed size=0 -> expect 400
+[400] {"status":400,"error":"ConstraintViolation","message":"feed.size: must be greater than or equal to 1","path":"/api/v1/bookings/feed","timestamp":"2026-07-19T11:31:22.245715900Z","fieldErrors":[]}
+
+DONE.

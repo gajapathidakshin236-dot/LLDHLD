@@ -1,0 +1,53 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260716094628
+Username: DESKTOP-LC1LO9U\Admin
+RunAs User: DESKTOP-LC1LO9U\Admin
+Configuration Name: 
+Machine: DESKTOP-LC1LO9U (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoExit -ExecutionPolicy Bypass -File C:\Users\Admin\Documents\GitHub\LLDHLD\run-build.ps1
+Process ID: 18700
+PSVersion: 5.1.26100.8655
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8655
+BuildVersion: 10.0.26100.8655
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+=== 1/3 Locating JDK ===
+[OK] Using JDK 25 at: C:\Program Files\Microsoft\jdk-25.0.3.9-hotspot
+
+=== 2/3 Locating Maven ===
+Maven not on PATH - downloading portable Maven 3.9.9 (one time, ~9 MB)...
+[OK] Using portable Maven: C:\Users\Admin\.portable-maven\apache-maven-3.9.9\bin\mvn.cmd
+
+=== 3/3 mvn clean test  (first run downloads Spring - a few minutes) ===
+09:47:38.280 [main] [cid=27342602] INFO  c.c.b.interceptor.LoggingInterceptor - <- GET /api/v1/bookings/by-status status
+=400 took=7ms
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 26.39 s -- in com.company.booking.BookingService
+ApplicationTests
+[INFO]
+[INFO] Results:
+[INFO]
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  44.754 s
+[INFO] Finished at: 2026-07-16T09:47:38+05:30
+[INFO] ------------------------------------------------------------------------
+
+==========================================================
+ BUILD + ALL TESTS PASSED
+==========================================================
+
+Now in IntelliJ: Maven panel -> Reload All Maven Projects.
+booking-service imports at language level 21, all errors clear.
+**********************
+Windows PowerShell transcript end
+End time: 20260716094738
+**********************
